@@ -49756,104 +49756,7 @@ def edit_loan_payment(request, id):
     return render(request, 'edit_loan_transaction.html', {'loan': loan})
     
     
-    
-def loan_statement(request, id):
-    loan = loan_account.objects.get(id=id)
-    cmp1 = company.objects.get(id=request.session["uid"])
-    current_date = date.today().strftime('%Y-%m-%d')
-
-    if request.method == 'POST':
-        sdate = request.POST.get('sdate')
-        edate = request.POST.get('edate')
-
-        if sdate and edate:  # If start date and end date are provided
-            # Calculate balance for the specified date range
-            search = loan_transaction.objects.filter(
-                loan_id=loan,
-                loan_date__range=(sdate, edate))
-            total_debits = loan_transaction.objects.filter(
-                loan_id=loan,
-                loan_date__range=(sdate, edate),
-            ).aggregate(total_debits=Sum('loan_amount'))['total_debits'] or 0
-
-            
-
-            balance = total_debits
-            context = {
-                'cmp1': cmp1,
-                'balance': balance,
-                'sdate': sdate,
-                'edate': edate,
-                'ids': id,
-                'loan': loan,
-                'current_date': current_date,
-                'bnk':search
-                
-            }
-        else:
-            # If start date and end date are not provided, display all transactions
-            searchrslt = loan_transaction.objects.filter(loan_id=loan)
-            context = {
-                'cmp1': cmp1,
-                'bnk': searchrslt,
-                'ids': id,
-                'loan': loan,
-                'current_date': current_date,
-                'balance':loan.balance,
-            }
-
-        return render(request, 'app1/loan_statement.html', context)
-
-    else:
-        # If it's a GET request, display all transactions by default
-        bnk = loan_transaction.objects.filter(loan_id=id)
-        context = {
-            'cmp1': cmp1,
-            'bnk': bnk,
-            'ids': id,
-            'loan': loan,
-            'current_date': current_date,
-            'balance':loan.balance,
-        }
-        return render(request, 'app1/loan_statement.html', context)    
         
-        
-def loan_pdf(request,id):
-
-    cmp1 = company.objects.get(id=request.session["uid"])
-    
-    bnk=loan_transaction.objects.filter(loan_id=id)
-
-    loan=loan_account.objects.get(id=id)
-    
-    template_path = 'app1/loan_account_statement_pdf.html'
-    context={
-        'cmp1':cmp1,
-        'data':bnk,
-        'ids':id,
-        'loan':loan,
-
-    }
-    fname=loan.account_name
-   
-    # Create a Django response object, and specify content_type as pdftemp_creditnote
-    response = HttpResponse(content_type='application/pdf')
-    #response['Content-Disposition'] = 'attachment; filename="certificate.pdf"'
-    response['Content-Disposition'] =f'attachment; filename= {fname}.pdf'
-    # find the template and render it.
-    template = get_template(template_path)
-    html = template.render(context)
-
-    # create a pdf
-    pisa_status = pisa.CreatePDF(
-       html, dest=response)
-    
-
-
-    # if error then show some funy view
-    if pisa_status.err:
-       return HttpResponse('We had some errors <pre>' + html + '</pre>')
-    return response
     
 
 def active_status(request,id):
@@ -55612,3 +55515,112 @@ def create_loan(request):
 
     return render(request, 'app1/loan_creat.html', context)
  
+
+
+ #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+    
+def loan_statement(request, id):
+    loan = loan_account.objects.get(id=id)
+    cmp1 = company.objects.get(id=request.session["uid"])
+    current_date = date.today().strftime('%Y-%m-%d')
+
+    if request.method == 'POST':
+        global sdate
+        global edate
+        sdate = request.POST.get('sdate')
+        edate = request.POST.get('edate')
+
+        if sdate and edate:  # If start date and end date are provided
+            # Calculate balance for the specified date range
+            search = loan_transaction.objects.filter(
+                loan_id=loan,
+                loan_date__range=(sdate, edate))
+            total_debits = loan_transaction.objects.filter(
+                loan_id=loan,
+                loan_date__range=(sdate, edate),
+            ).aggregate(total_debits=Sum('loan_amount'))['total_debits'] or 0
+
+            
+
+            balance = total_debits
+            context = {
+                'cmp1': cmp1,
+                'balance': balance,
+                'sdate': sdate,
+                'edate': edate,
+                'ids': id,
+                'loan': loan,
+                'current_date': current_date,
+                'bnk':search
+                
+            }
+        else:
+            # If start date and end date are not provided, display all transactions
+            searchrslt = loan_transaction.objects.filter(loan_id=loan)
+            context = {
+                'cmp1': cmp1,
+                'bnk': searchrslt,
+                'ids': id,
+                'loan': loan,
+                'current_date': current_date,
+                'balance':loan.balance,
+            }
+
+        return render(request, 'app1/loan_statement.html', context)
+
+    else:
+        # If it's a GET request, display all transactions by default
+        bnk = loan_transaction.objects.filter(loan_id=id)
+        context = {
+            'cmp1': cmp1,
+            'bnk': bnk,
+            'ids': id,
+            'loan': loan,
+            'current_date': current_date,
+            'balance':loan.balance,
+        }
+        return render(request, 'app1/loan_statement.html', context)    
+ 
+
+
+def loan_pdf(request, id):
+    print(sdate)
+
+    cmp1 = company.objects.get(id=request.session["uid"])
+    loan = loan_account.objects.get(id=id)
+
+    # Filter data based on sdate and edate if they are provided
+    if sdate and edate:
+        bnk = loan_transaction.objects.filter(loan_id=id, loan_date__range=[sdate, edate])
+    else:
+        bnk = loan_transaction.objects.filter(loan_id=id)
+
+    template_path = 'app1/loan_account_statement_pdf.html'
+    context = {
+        'cmp1': cmp1,
+        'data': bnk,
+        'ids': id,
+        'loan': loan,
+    }
+    
+    fname ="Loan statement of " +  loan.account_name
+
+    # Create a Django response object, and specify content_type as pdf
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename={fname}.pdf'
+
+    # Find the template and render it.
+    template = get_template(template_path)
+    html = template.render(context)
+
+    # Create a PDF
+    pisa_status = pisa.CreatePDF(html, dest=response)
+
+    # If there is an error, display a message
+    if pisa_status.err:
+        return HttpResponse('We had some errors <pre>' + html + '</pre>')
+    
+    return response
