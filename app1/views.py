@@ -33874,8 +33874,11 @@ def viewvendor(request, id):
             float(vndr.openingbalance) * (-1 if vndr.opening_balance_type == 'Credit' else 1) +
 
             float(tot6['t2'] or 0) +
-            float(tot1['t2'] or 0) +
-            float(tot4['t2'] or 0) +
+            float(tot4['t2'] or 0) 
+            )
+        total_balance = (
+
+            float(tot1['t2'] or 0) -
             float(tot8['t2'] or 0) )
 
 
