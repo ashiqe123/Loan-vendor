@@ -33862,13 +33862,13 @@ def viewvendor(request, id):
         
         tot6 = purchasebill.objects.filter(cid=cmp1, vendor_name=su).all().aggregate(t2=Sum('balance_amount'))
         tot3 = purchasebill.objects.filter(cid=cmp1, vendor_name=su).all().aggregate(t2=Sum('paid_amount'))
-        tot1 = purchasepayment.objects.filter(vendor=su).all().aggregate(t2=Sum('amtcredit'))
-        tot7 = purchasepayment.objects.filter(vendor=su).all().aggregate(t3=Sum('paymentamount')) 
+        tot1 = purchasepayment.objects.filter(cid=cmp1,vendor=su).all().aggregate(t2=Sum('amtcredit'))
+        tot7 = purchasepayment.objects.filter(cid=cmp1,vendor=su).all().aggregate(t3=Sum('paymentamount')) 
         tot2 = recurring_bill.objects.filter(cid=cmp1, vendor_name=su).all().aggregate(t2=Sum('paid_amount'))
         tot4 = recurring_bill.objects.filter(cid=cmp1, vendor_name=su).all().aggregate(t2=Sum('balance'))
         tot5 = purchasedebit.objects.filter(cid=cmp1, vendor=su).all().aggregate(t2=Sum('paid_amount'))
         tot8 = purchasedebit.objects.filter(cid=cmp1, vendor=su).all().aggregate(t2=Sum('balance_amount'))
-
+        print(float(tot1['t2'] or 0))
         # Corrected total balance calculation
         total_balance = (
             float(vndr.openingbalance) * (-1 if vndr.opening_balance_type == 'Credit' else 1) +
@@ -33876,12 +33876,14 @@ def viewvendor(request, id):
             float(tot6['t2'] or 0) +
             float(tot4['t2'] or 0) 
             )
-        total_balance = (
+        print(total_balance)
+        total = (
 
-            float(tot1['t2'] or 0) -
-            float(tot8['t2'] or 0) )
-
-
+            float(tot1['t2'] or 0) +
+            float(tot8['t2'] or 0) 
+            )
+        print(total)
+        total_balance = total_balance-total
 
         pbl = purchasebill.objects.filter(vendor_name=su,cid_id=cmp1).all() 
         paymnt = purchasepayment.objects.filter(vendor=su,cid_id=cmp1).all()  

@@ -1469,6 +1469,7 @@ class purchaseorder(models.Model):
     )
     
     status =models.CharField(max_length=150,choices=porder_status,default='Draft')
+    vendor_balance =  models.FloatField(blank=True,null=True)
 
 class purchaseorder_item(models.Model):
     porder = models.ForeignKey(purchaseorder, on_delete=models.CASCADE,null=True)
@@ -1534,6 +1535,7 @@ class purchasebill(models.Model):
         ('Billed','Billed'),
         ('Save','Save'),
     )
+    vendor_balance =  models.FloatField(blank=True,null=True)
     status =models.CharField(max_length=150,choices=bill_status,default='Draft')
 
 class purchasebill_item(models.Model):
@@ -1566,6 +1568,7 @@ class purchase_expense(models.Model):
     reference = models.CharField(max_length=100,null=True)
     note = models.CharField(max_length=255,null=True)
     file = models.FileField(upload_to='purchase/expense',default="default.png")
+    vendor_balance =  models.FloatField(blank=True,null=True)
 
 class creditperiod(models.Model):
     newperiod = models.IntegerField(null=True)
@@ -1592,6 +1595,7 @@ class purchasepayment(models.Model):
     gst_treatment = models.CharField(max_length=100,null=True)
     gst_number = models.CharField(max_length=100,null=True)
     status = models.CharField(max_length=100,default="Draft")
+    vendor_balance =  models.FloatField(blank=True,null=True)
 
 class purchasepayment1(models.Model):
     pymnt = models.ForeignKey(purchasepayment, on_delete=models.CASCADE,null=True)
@@ -1648,6 +1652,7 @@ class purchasedebit(models.Model):
     gstnumber=models.CharField(max_length=150 ,default='NULL')
     gsttype=models.CharField(max_length=150 ,default='NULL')
     status =models.CharField(max_length=150,choices=debit_status ,default='Draft')
+    vendor_balance =  models.FloatField(blank=True,null=True)
 
 class purchasedebit1(models.Model):
     pdebit = models.ForeignKey(purchasedebit, on_delete=models.CASCADE,null=True)
@@ -2304,7 +2309,8 @@ class recurring_bill(models.Model):
         ('Save','Save'),
     )
     status =models.CharField(max_length=150,choices=bill_status,default='Draft')
-    
+    vendor_balance =  models.FloatField(blank=True,null=True)
+
     
 class recurringbill_item(models.Model):
     bill = models.ForeignKey(recurring_bill, on_delete=models.CASCADE,null=True)
