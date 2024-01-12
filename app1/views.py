@@ -33877,13 +33877,7 @@ def viewvendor(request, id):
             float(tot4['t2'] or 0) 
             )
         print(total_balance)
-        total = (
 
-            float(tot1['t2'] or 0) +
-            float(tot8['t2'] or 0) 
-            )
-        print(total)
-        total_balance = total_balance-total
 
         pbl = purchasebill.objects.filter(vendor_name=su,cid_id=cmp1).all() 
         paymnt = purchasepayment.objects.filter(vendor=su,cid_id=cmp1).all()  
