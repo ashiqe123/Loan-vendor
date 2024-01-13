@@ -33871,7 +33871,7 @@ def viewvendor(request, id):
         print(float(tot1['t2'] or 0))
         # Corrected total balance calculation
         total_balance = (
-            float(vndr.openingbalance) * (-1 if vndr.opening_balance_type == 'Credit' else 1) +
+            float(vndr.openingbalance) +
 
             float(tot6['t2'] or 0) +
             float(tot4['t2'] or 0) 
@@ -34001,6 +34001,8 @@ def viewvendor(request, id):
 
         comments = VendorComment.objects.filter(vendor=vndr)
         print(comments)
+        bal = float(vndr.openingbalance)
+        print(bal)
 
         context = {'vndr': vndr,'cmp1': cmp1,'pbill':pbill,'tod':tod,'re':re,
                     'pymnt':pymnt,'pbl':pbl,'paymnt':paymnt,'pordr':pordr,'expnc':expnc,'pdeb':pdeb,
