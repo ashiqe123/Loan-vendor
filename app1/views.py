@@ -33839,6 +33839,7 @@ def createvendor(request):
     return redirect('/')
 
 @login_required(login_url='regcomp')
+
 def viewvendor(request, id):
     if 'uid' in request.session:
         if request.session.has_key('uid'):
@@ -33887,13 +33888,16 @@ def viewvendor(request, id):
         rec =recurring_bill.objects.filter(vendor_name=su,cid_id=cmp1).all() 
 
         combined_data=[]
-
+        bal = float(vndr.openingbalance)
         for item in pbl:
             Type='Bill'
             Number=int(item.bill_no)
             Date=item.date
             Total=int(item.grand_total)
-            Balance=int(item.balance_amount) if item.balance_amount is not None else 0
+            Balance=int(item.grand_total)  - int(item.paid_amount) if item.paid_amount is not None else 0
+            Balance = Balance + bal
+            vndr.balance_amount = Balance
+            vndr.save()
             paid_amount=int(item.paid_amount) if item.paid_amount is not None else 0
 
             combined_data.append({
@@ -33906,13 +33910,18 @@ def viewvendor(request, id):
 
 
             })
-
+        bal = vndr.balance_amount
+        print(bal)
+        print('bal')
         for item in rec:
             Type='Recurring Bill'
             Number=item.billno
             Date=item.start_date
             Total=int(item.grand_total)
-            Balance=int(item.balance)
+            Balance=int(item.grand_total) - int(item.paid_amount) if item.paid_amount is not None else 0
+            vndr.balance_amount +=  Balance
+            vndr.save()
+            Balance = Balance + bal
             paid_amount=int(item.paid_amount) if item.paid_amount is not None else 0
 
             combined_data.append({
@@ -33933,6 +33942,7 @@ def viewvendor(request, id):
             Date=item.date
             Total=int(item.grand_total)
             Balance=int(item.balance_amount)
+            Balance = vndr.balance_amount
             paid_amount=int(item.paid_amount) if item.paid_amount is not None else 0
 
             combined_data.append({
@@ -33951,9 +33961,17 @@ def viewvendor(request, id):
             Date=item.paymentdate
             Total = int(item.paymentamount) if item.paymentamount else 0
             paid = int(item.amtreceived) if item.amtreceived else 0
+            print(Total)
             bal = int(item.paymentamount) - int(item.amtreceived) if item.amtreceived else 0
-            
-
+            res = vndr.balance_amount - int(item.paymentamount)
+            print(res)
+            vndr.save()
+            print(bal)
+            print('set1')
+            print(vndr.balance_amount)
+            vndr.balance_amount = res
+            vndr.save()
+            bal = vndr.balance_amount
             combined_data.append({
                 'Type':Type,
                 'Number':Number,
@@ -34003,7 +34021,8 @@ def viewvendor(request, id):
         print(comments)
         bal = float(vndr.openingbalance)
         print(bal)
-
+        for i in combined_data:
+            print(i)
         context = {'vndr': vndr,'cmp1': cmp1,'pbill':pbill,'tod':tod,'re':re,
                     'pymnt':pymnt,'pbl':pbl,'paymnt':paymnt,'pordr':pordr,'expnc':expnc,'pdeb':pdeb,
                     'statment':statment,'tot6':total_balance,'tot7':tot7,'tot1':tot1,'tot2':tot2,'combined_data':combined_data,

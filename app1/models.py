@@ -1394,7 +1394,7 @@ class vendor(models.Model):
     creditlimit = models.CharField(max_length=100, null=True)
     sourceofsupply = models.CharField(max_length=100, null=True)
     currency = models.CharField(max_length=100, null=True)
-    openingbalance = models.CharField(max_length=100, null=True)
+    openingbalance = models.IntegerField(null=True)
     opblnc_due = models.CharField(max_length=100, null=True)
     date = models.DateField(null=True,blank= True)
     paymentterms = models.CharField(max_length=100, null=True)
