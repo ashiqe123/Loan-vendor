@@ -529,7 +529,7 @@
                             <hr>
                             
                             <div class="row hidden-md-up" style="margin-top: 15px;">
-                                <div class="col-md-7" style="margin: auto;">
+                                <div class="col-md-8" style="margin: auto;">
                                   <div  class="card">
                                     <div id="panel">
                                         <div class="card-block1">
@@ -599,7 +599,7 @@
                                                                                     <tr>
                                                                                         <th style="color: black;">Balance Due</th>
                                                                                         <th>:</th>
-                                                                                        <th style="color: black;"> {{tot6}}</th>
+                                                                                        <th style="color: black;"> {{total_balance}}</th>
                                                                                     </tr>
                                                                                 </table>
                                                                             </div>
@@ -620,15 +620,7 @@
                                                                                 </tr>
                                                                             </thead>
                                                                             <tbody>
-                                                                                <tr>
-                                                                                    <td style="color: black;">0</td>
-                                                                                    <td style="color: black;">{{vndr.date}}</td>
-                                                                                    <td style="color: black;">**Opening Balance**</td>
-                                                                                    <td style="color: black;"></td>
-                                                                                    <td style="color: black;">{{vndr.openingbalance}}</td>
-                                                                                    <td style="color: black;">0</td>
-                                                                                    <td style="color: black;">{{vndr.openingbalance}}</td>
-                                                                                </tr>
+                                                                               
                                                                                 {% for data in combined_data %}
                                                                                     <tr>
                                                                                         <td style="color: black;">{{forloop.counter}}</td>
@@ -644,7 +636,7 @@
                                                                                     {% endfor %}<br>
                                                                                 <tr>
                                                                                     <th colspan="5" style="color: black;">Balance Due</th>
-                                                                                    <th style="color: black;">{{tot6}}</th>
+                                                                                    <th style="color: black;">{{total_balance}}</th>
                                                                                 </tr>
                                                                             </tbody>
                                                                             <tbody></tbody>
@@ -843,15 +835,7 @@
     
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <th>0</th>
-                                        <th>{{vndr.date}}</th>
-                                        <th>**Opening Balance**</th>
-                                        <td>0</td>
-                                        <th>{{vndr.openingbalance}}</th>
-                                        <th>{{vndr.openingbalance}}</th>
-                                    </tr>
-                                   
+                                    
                                     {% for data in combined_data %}
                                     <tr>
                                         <td>{{forloop.counter}}</td>

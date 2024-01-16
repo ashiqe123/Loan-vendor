@@ -33854,6 +33854,12 @@ def viewvendor(request, id):
         toda = date.today()
         tod = toda.strftime("%Y-%m-%d")
 
+        if vndr.opening_balance_type == 'Credit':
+            vndr.openingbalance *= -1
+        else:
+            vndr.openingbalance = abs(vndr.openingbalance)
+
+        vndr.save()
 
         pbill = purchasebill.objects.filter(vendor_name=su,status='Approved',date=tod)
         pymnt = purchasepayment.objects.filter(vendor=su, paymentdate=tod)
@@ -54950,132 +54956,175 @@ def vendor_statement(request,id):
         expnc = purchase_expense.objects.filter(vendor=su,cid_id=cmp1).all()   
         pordr =purchaseorder.objects.filter(vendor_name=su,cid_id=cmp1).all() 
         rec =recurring_bill.objects.filter(vendor_name=su,cid_id=cmp1).all() 
+        totv = vendor.objects.filter(cid=cmp1, vendorid=id).all()
+
         if fromdate == '' and todate == '' :
             tot6 = purchasebill.objects.filter(cid=cmp1, vendor_name=su).all().aggregate(t2=Sum('balance_amount'))
             tot3 = purchasebill.objects.filter(cid=cmp1, vendor_name=su).all().aggregate(t2=Sum('paid_amount'))
-            tot1 = purchasepayment.objects.filter(vendor=su).all().aggregate(t2=Sum('amtcredit'))
-            tot7 = purchasepayment.objects.filter(vendor=su).all().aggregate(t3=Sum('paymentamount')) 
+            tot1 = purchasepayment.objects.filter(cid=cmp1,vendor=su).all().aggregate(t2=Sum('amtcredit'))
+            tot7 = purchasepayment.objects.filter(cid=cmp1,vendor=su).all().aggregate(t3=Sum('paymentamount')) 
             tot2 = recurring_bill.objects.filter(cid=cmp1, vendor_name=su).all().aggregate(t2=Sum('paid_amount'))
             tot4 = recurring_bill.objects.filter(cid=cmp1, vendor_name=su).all().aggregate(t2=Sum('balance'))
             tot5 = purchasedebit.objects.filter(cid=cmp1, vendor=su).all().aggregate(t2=Sum('paid_amount'))
             tot8 = purchasedebit.objects.filter(cid=cmp1, vendor=su).all().aggregate(t2=Sum('balance_amount'))
+            tot7 = purchasepayment.objects.filter(vendor=su).all().aggregate(t3=Sum('paymentamount')) 
+            tot9 = vendor.objects.filter(cid=cmp1, vendorid=id).all().aggregate(t2=Sum('openingbalance'))
 
                     # Corrected total balance calculation
-            total_balance = (float(tot6['t2'] or 0) +float(tot1['t2'] or 0) +float(tot4['t2'] or 0) +float(tot8['t2'] or 0))
+            total_balance = (float(tot9['t2'] or 0)+float(tot6['t2'] or 0) +float(tot1['t2'] or 0) +float(tot4['t2'] or 0) +float(tot8['t2'] or 0))
 
 
             combined_data=[]
+            for item in totv:
+                Type='Opening Balance'
+                Number=0
+                Date=item.date
+                Total=int(item.openingbalance)
+                Balance=int(item.openingbalance) 
+                vndr.balance_amount =  Balance
+                vndr.save()
+                
+                paid_amount=0
 
+                combined_data.append({
+                    'Type':Type,
+                    'Number':Number,
+                    'Date':Date,
+                    'Total':Total,
+                    'Balance':Balance,
+                    'paid':paid_amount,
+
+                })    
+
+            bal = float(vndr.openingbalance)
             for item in pbl:
-                            Type='Bill'
-                            Number=int(item.bill_no)
-                            Date=item.date
-                            Total=int(item.grand_total)
-                            Balance=int(item.balance_amount) if item.balance_amount is not None else 0
-                            paid_amount=int(item.paid_amount) if item.paid_amount is not None else 0
+                Type='Bill'
+                Number=int(item.bill_no)
+                Date=item.date
+                Total=int(item.grand_total)
+                Balance=int(item.grand_total)  - int(item.paid_amount) if item.paid_amount is not None else 0
+                Balance = Balance + bal
+                vndr.balance_amount = Balance
+                vndr.save()
+                paid_amount=int(item.paid_amount) if item.paid_amount is not None else 0
 
-                            combined_data.append({
-                                'Type':Type,
-                                'Number':Number,
-                                'Date':Date,
-                                'Total':Total,
-                                'Balance':Balance,
-                                'paid':paid_amount,
+                combined_data.append({
+                    'Type':Type,
+                    'Number':Number,
+                    'Date':Date,
+                    'Total':Total,
+                    'Balance':Balance,
+                    'paid':paid_amount,
 
 
-                            })
-
+                })
+            bal = vndr.balance_amount
+            print(bal)
+            print('bal')
             for item in rec:
-                            Type='Recurring Bill'
-                            Number=item.billno
-                            Date=item.start_date
-                            Total=int(item.grand_total)
-                            Balance=int(item.balance)
-                            paid_amount=int(item.paid_amount) if item.paid_amount is not None else 0
+                Type='Recurring Bill'
+                Number=item.billno
+                Date=item.start_date
+                Total=int(item.grand_total)
+                Balance=int(item.grand_total) - int(item.paid_amount) if item.paid_amount is not None else 0
+                vndr.balance_amount +=  Balance
+                vndr.save()
+                Balance = Balance + bal
+                paid_amount=int(item.paid_amount) if item.paid_amount is not None else 0
 
-                            combined_data.append({
-                                'Type':Type,
-                                'Number':Number,
-                                'Date':Date,
-                                'Total':Total,
-                                'Balance':Balance,
-                                'paid':paid_amount,
+                combined_data.append({
+                    'Type':Type,
+                    'Number':Number,
+                    'Date':Date,
+                    'Total':Total,
+                    'Balance':Balance,
+                    'paid':paid_amount,
 
-                            })    
+                })    
 
 
 
             for item in pordr:
-                            Type='Purchase Order'
-                            Number=int(item.puchaseorder_no)
-                            Date=item.date
-                            Total=int(item.grand_total)
-                            Balance=int(item.balance_amount)
-                            paid_amount=int(item.paid_amount) if item.paid_amount is not None else 0
+                Type='Purchase Order'
+                Number=int(item.puchaseorder_no)
+                Date=item.date
+                Total=int(item.grand_total)
+                Balance=int(item.balance_amount)
+                Balance = vndr.balance_amount
+                paid_amount=int(item.paid_amount) if item.paid_amount is not None else 0
 
-                            combined_data.append({
-                                'Type':Type,
-                                'Number':Number,
-                                'Date':Date,
-                                'Total':Total,
-                                'Balance':Balance,
-                                'paid':paid_amount,
+                combined_data.append({
+                    'Type':Type,
+                    'Number':Number,
+                    'Date':Date,
+                    'Total':Total,
+                    'Balance':Balance,
+                    'paid':paid_amount,
 
-                            })    
+                })    
 
             for item in paymnt:
-                            Type='Payment'
-                            Number=int(item.pymntid)
-                            Date=item.paymentdate
-                            Total = int(item.paymentamount) if item.paymentamount else 0
-                            paid = int(item.amtreceived) if item.amtreceived else 0
-                            bal = int(item.paymentamount) - int(item.amtreceived) if item.amtreceived else 0
-                            
+                Type='Payment'
+                Number=int(item.pymntid)
+                Date=item.paymentdate
+                Total = int(item.paymentamount) if item.paymentamount else 0
+                paid = int(item.amtreceived) if item.amtreceived else 0
+                print(Total)
+                bal = int(item.paymentamount) - int(item.amtreceived) if item.amtreceived else 0
+                res = vndr.balance_amount - int(item.paymentamount)
+                print(res)
+                vndr.save()
+                print(bal)
+                print('set1')
+                print(vndr.balance_amount)
+                vndr.balance_amount = res
+                vndr.save()
+                bal = vndr.balance_amount
+                combined_data.append({
+                    'Type':Type,
+                    'Number':Number,
+                    'Date':Date,
+                    'Total':Total,
+                    'Balance':bal,
+                    'paid':paid,
 
-                            combined_data.append({
-                                'Type':Type,
-                                'Number':Number,
-                                'Date':Date,
-                                'Total':Total,
-                                'Balance':bal,
-                                'paid':paid,
-
-                            }) 
+                }) 
 
             for item in pdeb:
-                            Type='Debit Note'
-                            Number=int(item.debit_no)
-                            Date=item.debitdate
-                            Total=int(item.grandtotal)
-                            Balance=float(item.balance_amount)
+                Type='Debit Note'
+                Number=int(item.debit_no)
+                Date=item.debitdate
+                Total=int(item.grandtotal)
+                Balance=float(item.balance_amount)
 
-                            combined_data.append({
-                                'Type':Type,
-                                'Number':Number,
-                                'Date':Date,
-                                'Total':Total,
-                                'Balance':Balance,
-                                'paid':0
+                combined_data.append({
+                    'Type':Type,
+                    'Number':Number,
+                    'Date':Date,
+                    'Total':Total,
+                    'Balance':Balance,
+                    'paid':0
 
-                            })    
+                })    
 
-                        
+            
             for item in expnc:
-                            Type='Expense'
-                            Number=int(item.expense_no)
-                            Date=item.date 
-                            Total=int(item.amount)
-                            Balance=Total
+                Type='Expense'
+                Number=int(item.expense_no)
+                Date=item.date 
+                Total=int(item.amount)
+                Balance=Total
 
-                            combined_data.append({
-                                'Type':Type,
-                                'Number':Number,
-                                'Date':Date,
-                                'Total':Total,
-                                'paid':0,
-                                'Balance':0
+                combined_data.append({
+                    'Type':Type,
+                    'Number':Number,
+                    'Date':Date,
+                    'Total':Total,
+                    'paid':0,
+                    'Balance':0
 
-                            })                 
+                })                 
+                    
 
               
         else:
@@ -55094,128 +55143,170 @@ def vendor_statement(request,id):
             tot4 = recurring_bill.objects.filter(cid=cmp1, vendor_name=su,start_date__gte=fromdate, start_date__lte=todate).all().aggregate(t2=Sum('balance'))
             tot5 = purchasedebit.objects.filter(cid=cmp1, vendor=su,debitdate__gte=fromdate, debitdate__lte=todate).all().aggregate(t2=Sum('paid_amount'))
             tot8 = purchasedebit.objects.filter(cid=cmp1, vendor=su,debitdate__gte=fromdate, debitdate__lte=todate).all().aggregate(t2=Sum('balance_amount'))
-
+            totv = vendor.objects.filter(cid=cmp1, vendorid=id,date__gte=fromdate, date__lte=todate).all()
+            tot9 = vendor.objects.filter(cid=cmp1, vendorid=id,date__gte=fromdate, date__lte=todate).all().aggregate(t2=Sum('openingbalance'))
+            print(tot9)
                         # Corrected total balance calculation
-            total_balance = (float(tot6['t2'] or 0) +float(tot1['t2'] or 0) +float(tot4['t2'] or 0) +float(tot8['t2'] or 0))
+            total_balance = (float(tot9['t2'] or 0)+float(tot6['t2'] or 0) +float(tot1['t2'] or 0) +float(tot4['t2'] or 0) +float(tot8['t2'] or 0))
 
 
 
                         # Add more data sources as needed
             combined_data=[]
+            for item in totv:
+                Type='Opening Balance'
+                Number=0
+                Date=item.date
+                Total=int(item.openingbalance)
+                Balance=int(item.openingbalance) 
+                vndr.balance_amount =  Balance
+                vndr.save()
+                
+                paid_amount=0
+
+                combined_data.append({
+                    'Type':Type,
+                    'Number':Number,
+                    'Date':Date,
+                    'Total':Total,
+                    'Balance':Balance,
+                    'paid':paid_amount,
+
+                })    
+
+
+            bal = float(vndr.openingbalance)
 
             for item in pbill:
-                            print(item.bill_no)
-                            Type='Bill'
-                            Number=int(item.bill_no)
-                            Date=item.date
-                            Total=int(item.grand_total)
-                            Balance=int(item.balance_amount) if item.balance_amount is not None else 0
-                            paid_amount=int(item.paid_amount) if item.paid_amount is not None else 0
+                Type='Bill'
+                Number=int(item.bill_no)
+                Date=item.date
+                Total=int(item.grand_total)
+                Balance=int(item.grand_total)  - int(item.paid_amount) if item.paid_amount is not None else 0
+                Balance = Balance + bal
+                vndr.balance_amount = Balance
+                vndr.save()
+                paid_amount=int(item.paid_amount) if item.paid_amount is not None else 0
 
-                            combined_data.append({
-                                'Type':Type,
-                                'Number':Number,
-                                'Date':Date,
-                                'Total':Total,
-                                'Balance':Balance,
-                                'paid':paid_amount,
+                combined_data.append({
+                    'Type':Type,
+                    'Number':Number,
+                    'Date':Date,
+                    'Total':Total,
+                    'Balance':Balance,
+                    'paid':paid_amount,
 
 
-                                })
-
+                })
+            bal = vndr.balance_amount
+            print(bal)
+            print('bal')
             for item in rec:
-                            Type='Recurring Bill'
-                            Number=item.billno
-                            Date=item.start_date
-                            Total=int(item.grand_total)
-                            Balance=int(item.balance)
-                            paid_amount=int(item.paid_amount) if item.paid_amount is not None else 0
+                Type='Recurring Bill'
+                Number=item.billno
+                Date=item.start_date
+                Total=int(item.grand_total)
+                Balance=int(item.grand_total) - int(item.paid_amount) if item.paid_amount is not None else 0
+                vndr.balance_amount +=  Balance
+                vndr.save()
+                Balance = Balance + bal
+                paid_amount=int(item.paid_amount) if item.paid_amount is not None else 0
 
-                            combined_data.append({
-                                'Type':Type,
-                                'Number':Number,
-                                'Date':Date,
-                                'Total':Total,
-                                'Balance':Balance,
-                                'paid':paid_amount,
+                combined_data.append({
+                    'Type':Type,
+                    'Number':Number,
+                    'Date':Date,
+                    'Total':Total,
+                    'Balance':Balance,
+                    'paid':paid_amount,
 
-                            })    
+                })    
 
 
 
             for item in pordr:
-                            Type='Purchase Order'
-                            Number=int(item.puchaseorder_no)
-                            Date=item.date
-                            Total=int(item.grand_total)
-                            Balance=int(item.balance_amount)
-                            paid_amount=int(item.paid_amount) if item.paid_amount is not None else 0
+                Type='Purchase Order'
+                Number=int(item.puchaseorder_no)
+                Date=item.date
+                Total=int(item.grand_total)
+                Balance=int(item.balance_amount)
+                Balance = vndr.balance_amount
+                paid_amount=int(item.paid_amount) if item.paid_amount is not None else 0
 
-                            combined_data.append({
-                                'Type':Type,
-                                'Number':Number,
-                                'Date':Date,
-                                'Total':Total,
-                                'Balance':Balance,
-                                'paid':paid_amount,
+                combined_data.append({
+                    'Type':Type,
+                    'Number':Number,
+                    'Date':Date,
+                    'Total':Total,
+                    'Balance':Balance,
+                    'paid':paid_amount,
 
-                            })    
+                })    
 
             for item in paymnt:
-                            Type='Payment'
-                            Number=int(item.pymntid)
-                            Date=item.paymentdate
-                            Total = int(item.paymentamount) if item.paymentamount else 0
-                            paid = int(item.amtreceived) if item.amtreceived else 0
-                            bal = int(item.paymentamount) - int(item.amtreceived) if item.amtreceived else 0
-                            
+                Type='Payment'
+                Number=int(item.pymntid)
+                Date=item.paymentdate
+                Total = int(item.paymentamount) if item.paymentamount else 0
+                paid = int(item.amtreceived) if item.amtreceived else 0
+                print(Total)
+                bal = int(item.paymentamount) - int(item.amtreceived) if item.amtreceived else 0
+                res = vndr.balance_amount - int(item.paymentamount)
+                print(res)
+                vndr.save()
+                print(bal)
+                print('set1')
+                print(vndr.balance_amount)
+                vndr.balance_amount = res
+                vndr.save()
+                bal = vndr.balance_amount
+                combined_data.append({
+                    'Type':Type,
+                    'Number':Number,
+                    'Date':Date,
+                    'Total':Total,
+                    'Balance':bal,
+                    'paid':paid,
 
-                            combined_data.append({
-                                'Type':Type,
-                                'Number':Number,
-                                'Date':Date,
-                                'Total':Total,
-                                'Balance':bal,
-                                'paid':paid,
-
-                            }) 
+                }) 
 
             for item in pdeb:
-                            Type='Debit Note'
-                            Number=int(item.debit_no)
-                            Date=item.debitdate
-                            Total=int(item.grandtotal)
-                            Balance=float(item.balance_amount)
+                Type='Debit Note'
+                Number=int(item.debit_no)
+                Date=item.debitdate
+                Total=int(item.grandtotal)
+                Balance=float(item.balance_amount)
 
-                            combined_data.append({
-                                'Type':Type,
-                                'Number':Number,
-                                'Date':Date,
-                                'Total':Total,
-                                'Balance':Balance,
-                                'paid':0
+                combined_data.append({
+                    'Type':Type,
+                    'Number':Number,
+                    'Date':Date,
+                    'Total':Total,
+                    'Balance':Balance,
+                    'paid':0
 
-                            })    
+                })    
 
-                        
-            for item in expnc:
-                            Type='Expense'
-                            Number=int(item.expense_no)
-                            Date=item.date 
-                            Total=int(item.amount)
-                            Balance=Total
-
-                            combined_data.append({
-                                'Type':Type,
-                                'Number':Number,
-                                'Date':Date,
-                                'Total':Total,
-                                'paid':0,
-                                'Balance':0
-
-                            })                 
-           
             
+            for item in expnc:
+                Type='Expense'
+                Number=int(item.expense_no)
+                Date=item.date 
+                Total=int(item.amount)
+                Balance=Total
+
+                combined_data.append({
+                    'Type':Type,
+                    'Number':Number,
+                    'Date':Date,
+                    'Total':Total,
+                    'paid':0,
+                    'Balance':0
+
+                })                 
+
+            
+                
 
                     
 
